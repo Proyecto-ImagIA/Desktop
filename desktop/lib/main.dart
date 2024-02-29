@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 void main() {
   runApp(MyApp());
@@ -31,6 +34,43 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarUltimaURL();
+  }
+
+  Future<File> _obtenerArchivoURL() async {
+    final directorio = Directory.current;
+    return File("${directorio.path}/url.txt");
+  }
+
+  Future<void> _cargarUltimaURL() async {
+    try {
+      final directorio = Directory.current;
+      final rutaArchivo = "${directorio.path}/url.txt";
+      File archivo = File(rutaArchivo);
+      String url = await archivo.readAsString();
+      setState(() {
+        _serverUrlController.text = url;
+      });
+    } catch (e) {
+      print("Error al cargar la URL: $e");
+    }
+  }
+
+  Future<void> _guardarURL(String url) async {
+    try {
+      final directorio = Directory.current;
+      final rutaArchivo = "${directorio.path}/url.txt";
+      File archivo = File(rutaArchivo);
+      await archivo.writeAsString(url);
+      print('URL guardada correctamente: $url');
+    } catch (e) {
+      print("Error al guardar la URL: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _login() async {
+  Future<void> _login() async {
     String serverUrl = _serverUrlController.text;
     String username = _usernameController.text;
     String password = _passwordController.text;
@@ -84,6 +124,8 @@ class _LoginPageState extends State<LoginPage> {
     // para acceder a la API y realizar las operaciones necesarias.
 
     // Por ejemplo, aquí se puede hacer una solicitud de autenticación
+    await _guardarURL(serverUrl); // Guardar la URL introducida por el usuario
+
     try {
       final response = await http.post(
         Uri.parse('$serverUrl/api/user/login'),
@@ -105,7 +147,8 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         // Si la solicitud no es exitosa, muestra un mensaje de error
         setState(() {
-          _errorMessage = 'Login failed. Please check your credentials and try again.';
+          _errorMessage =
+              'Login failed. Please check your credentials and try again.';
         });
       }
     } catch (e) {
